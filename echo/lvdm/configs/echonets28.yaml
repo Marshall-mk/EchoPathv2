@@ -1,7 +1,6 @@
-wandb_group: "lvdm_echonets_with_triplets28"
-output_dir: /nfs/usrhome/khmuhammad/EchoPath/experiments/lvdm_echonets_with_triplets28
+wandb_group: "lvdm_echonets_with_random28"
+output_dir: /nfs/usrhome/khmuhammad/EchoPath/experiments/lvdm_echonets_with_random28
 
-pretrained_model_name_or_path: null
 vae_path: /nfs/usrhome/khmuhammad/EchoPath/models/all_vae_28x28x4
 
 globals:
@@ -10,7 +9,7 @@ globals:
     outputs: ["video", "lvef", "image", "key_frames"]
 
 datasets:
-    - name: CardiacNetLatent
+    - name: EchoDynamicLatent
       active: true
       params:
         root: /nfs/usrhome/khmuhammad/EchoPath/data/latents28/dynamic
@@ -19,7 +18,7 @@ datasets:
         target_resolution: 28 # emb resolution
         outputs: ${globals.outputs}
         
-    - name: CardiacNetLatent
+    - name: EchoPediatricLatent
       active: true
       params:
         root: /nfs/usrhome/khmuhammad/EchoPath/data/latents28/ped_a4c
@@ -28,7 +27,7 @@ datasets:
         target_resolution: 28 # emb resolution
         outputs: ${globals.outputs}
     
-    - name: CardiacNetLatent
+    - name: EchoPediatricLatent
       active: true
       params:
         root: /nfs/usrhome/khmuhammad/EchoPath/data/latents28/ped_psax
@@ -85,9 +84,9 @@ noise_scheduler:
     timestep_spacing: "leading" #
     steps_offset: 0 # unused
 
-train_batch_size: 4
+train_batch_size: 1
 dataloader_num_workers: 16
-max_train_steps: 500000
+max_train_steps: 1000000
 
 learning_rate: 1e-4
 lr_warmup_steps: 500
@@ -123,7 +122,7 @@ validation_conditioning_type: lvef
 
 report_to: wandb
 checkpointing_steps: 20000 # ~3/hour
-checkpoints_total_limit: 100 # no limit
+checkpoints_total_limit: 50 # no limit
 resume_from_checkpoint: latest
 tracker_project_name: echopathv2
 

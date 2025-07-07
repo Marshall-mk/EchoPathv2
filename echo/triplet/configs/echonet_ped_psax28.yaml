@@ -1,7 +1,7 @@
 wandb_group: "triplet_psax28"
-output_dir: /nfs/usrhome/khmuhammad/EchoPath/experiments/triplet_psax28
+output_dir: /nfs/usrhome/khmuhammad/EchoPath/experiments/triplet_psax28v2
 
-vae_path: /nfs/usrhome/khmuhammad/EchoPath/models/psax_vae_28x28x4
+vae_path: /nfs/usrhome/khmuhammad/EchoPath/models/all_vae_28x28x4
 
 globals:
     target_fps: 32
@@ -71,7 +71,7 @@ noise_scheduler:
 training_mode: diffusion
 train_batch_size: 256
 dataloader_num_workers: 16
-max_train_steps: 200000
+max_train_steps: 50000
 training_conditioning_type: class_id # class_id, text, or none
 
 learning_rate: 3e-4
@@ -108,7 +108,7 @@ validation_conditioning_type: none # class_id, text, or none
 
 report_to: wandb
 checkpointing_steps: 5000 #10000 # ~3/hour
-checkpoints_total_limit: 100 # no limit
+checkpoints_total_limit: 5 # no limit
 resume_from_checkpoint: latest
 tracker_project_name: echo-pathv2
 

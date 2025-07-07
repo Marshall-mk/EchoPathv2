@@ -134,6 +134,10 @@ def get_conditioning_vector(
 
         return conditioning
 
+    elif conditioning_type in ["lvef", "lvef_range"]:
+        # LVEF conditioning - treat as unconditional (no conditioning)
+        return None
+
     else:
         raise ValueError(f"Unsupported conditioning type: {conditioning_type}")
 
@@ -196,7 +200,7 @@ if __name__ == "__main__":
         "--conditioning_type",
         type=str,
         default="class_id",
-        choices=["class_id", "view", "text"],
+        choices=["class_id", "view", "text", "lvef", "lvef_range"],
         help="Type of conditioning to use.",
     )
 
@@ -311,14 +315,12 @@ if __name__ == "__main__":
         "timestep": -1,
     }
     # Set up conditioning based on type
-    if args.conditioning_type == "lvef" and args.lvef is not None:
-        conditioning_value = args.lvef
-    elif args.conditioning_type == "lvef":
-        conditioning_value = args.lvef_range
-    elif args.conditioning_type == "class_id":
+    if args.conditioning_type == "class_id":
         conditioning_value = args.class_ids
     elif args.conditioning_type == "view":
         conditioning_value = args.view_ids
+    elif args.conditioning_type in ["lvef", "lvef_range"]:
+        conditioning_value = None  # No conditioning for LVEF
     else:
         conditioning_value = None  # For text, we'll handle differently
 
@@ -361,6 +363,15 @@ if __name__ == "__main__":
                     tokenizer,
                     text_encoder,
                 )
+            
+            # Handle case where conditioning is None (unconditional)
+            if conditioning is None:
+                # Create zero conditioning tensor for unconditional generation
+                if args.conditioning_type == "text":
+                    conditioning = torch.zeros((B, 77, 768), device=device, dtype=dtype)  # CLIP text embedding size
+                else:
+                    conditioning = torch.zeros((B, 1, 1), device=device, dtype=dtype)
+            
             # Set the correct keyword argument based on conditioning type
             forward_kwargs["encoder_hidden_states"] = conditioning
             use_condition_guidance = args.condition_guidance_scale > 1.0
@@ -445,6 +456,8 @@ if __name__ == "__main__":
                 cond_values = conditioning.squeeze().to(torch.int).tolist()
             elif args.conditioning_type == "view":
                 cond_values = conditioning.squeeze().to(torch.int).tolist()
+            elif args.conditioning_type in ["lvef", "lvef_range"]:
+                cond_values = ["unconditional"] * B
             else:  # text
                 cond_values = text_conditioning
 

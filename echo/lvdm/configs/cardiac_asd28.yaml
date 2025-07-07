@@ -1,5 +1,5 @@
-wandb_group: "lvdm_cardiac_asd_with_triplets28"
-output_dir: /nfs/usrhome/khmuhammad/EchoPath/experiments/lvdm_cardiac_asd_with_triplets28
+wandb_group: "lvdm_cardiac_asd_with_random28"
+output_dir: /nfs/usrhome/khmuhammad/EchoPath/experiments/lvdm_cardiac_asd_with_random28
 
 vae_path: /nfs/usrhome/khmuhammad/EchoPath/models/asd_vae28x28x4
 
@@ -68,7 +68,7 @@ noise_scheduler:
     steps_offset: 0 # unused
 
 training_mode: diffusion
-train_batch_size: 4
+train_batch_size: 1
 dataloader_num_workers: 16
 max_train_steps: 50000
 training_conditioning_type: class_id # class_id, text, or none

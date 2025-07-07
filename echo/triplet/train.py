@@ -182,9 +182,10 @@ def log_validation(
             device=accelerator.device,
             dtype=weight_dtype,
         )
-    elif conditioning_type == "lvef":
-        conditioning = torch.tensor(
-            [e["lvef"] for e in ref_elements],
+    elif conditioning_type in ["lvef", "lvef_range"]:
+        # LVEF conditioning - treat as unconditional (no conditioning)
+        conditioning = torch.zeros(
+            (len(ref_elements), 1, 1),
             device=accelerator.device,
             dtype=weight_dtype,
         )
@@ -209,8 +210,8 @@ def log_validation(
 
     # Reshape conditioning for model input
     if (
-        conditioning_type != "text"
-    ):  # text embeddings would already be in the right shape
+        conditioning_type != "text" and conditioning_type not in ["lvef", "lvef_range"]
+    ):  # text embeddings and lvef would already be in the right shape
         conditioning = conditioning[:, None, None]  # B -> B x 1 x 1
 
     logger.info("Sampling... ")
@@ -327,7 +328,8 @@ def log_validation(
         latents_frames = latents.view(B, 3, 4, H, W).view(B * 3, 4, H, W)
         images_frames = val_vae.decode(latents_frames.float()).sample
         # Reshape back to (B, 3, 3, H * 8, W * 8) then merge to (B, 9, H * 8, W * 8)
-        images = images_frames.view(B, 3, 3, H * 8, W * 8).view(B, 9, H * 8, W * 8)
+        # images = images_frames.view(B, 3, 3, H * 8, W * 8).view(B, 9, H * 8, W * 8)
+        images = images_frames.view(B, 3, 3, H * 4, W * 4).view(B, 9, H * 4, W * 4)
         images = (images + 1) * 128  # [-1, 1] -> [0, 256]
         images = images.clamp(0, 255).to(torch.uint8).cpu()
 
@@ -339,9 +341,12 @@ def log_validation(
                 ref_B * 3, 4, ref_H, ref_W
             )
             ref_decoded = val_vae.decode(ref_frames_split.float()).sample
-            ref_frames = ref_decoded.view(ref_B, 3, 3, ref_H * 8, ref_W * 8).view(
-                ref_B, 9, ref_H * 8, ref_W * 8
+            ref_frames = ref_decoded.view(ref_B, 3, 3, ref_H * 4, ref_W * 4).view(
+                ref_B, 9, ref_H * 4, ref_W *  4
             )
+            # ref_frames = ref_decoded.view(ref_B, 3, 3, ref_H * 8, ref_W * 8).view(
+            #     ref_B, 9, ref_H * 8, ref_W *  8
+            # )
         else:  # Handle case where ref_frames has 4 channels (single frame)
             ref_frames = val_vae.decode(ref_frames.float()).sample
         ref_frames = (ref_frames + 1) * 128  # [-1, 1] -> [0, 256]
@@ -712,11 +717,15 @@ def train(
         for step, batch in enumerate(train_dataloader):
             with accelerator.accumulate(unet):
                 latents = batch["key_frames"]  # B x C x H x W
+                B, C, H, W = latents.shape
                 # Get conditioning based on type and convert to proper dtype
                 if conditioning_type == "class_id":
                     conditioning = batch["class_id"].to(dtype=weight_dtype)
-                elif conditioning_type == "lvef":
-                    conditioning = batch["lvef"].to(dtype=weight_dtype)
+                elif conditioning_type in ["lvef", "lvef_range"]:
+                    # LVEF conditioning - treat as unconditional (no conditioning)
+                    conditioning = torch.zeros(
+                        (B, 1, 1), device=accelerator.device, dtype=weight_dtype
+                    )
                 elif conditioning_type == "view":
                     conditioning = batch["view"].to(dtype=weight_dtype)
                 elif conditioning_type == "text":
@@ -740,8 +749,8 @@ def train(
 
                 B, C, H, W = latents.shape
                 if (
-                    conditioning_type != "text"
-                ):  # text embeddings would already be in the right shape
+                    conditioning_type != "text" and conditioning_type not in ["lvef", "lvef_range"]
+                ):  # text embeddings and lvef would already be in the right shape
                     conditioning = conditioning[:, None, None]
 
                 # Class conditioning dropout (for class-free guidance)
@@ -1015,7 +1024,7 @@ def parse_args():
         "--conditioning_type",
         type=str,
         default="class_id",
-        choices=["class_id", "lvef", "view", "text"],
+        choices=["class_id", "lvef", "view", "text", "lvef_range"],
         help="Type of conditioning to use",
     )
     parser.add_argument(

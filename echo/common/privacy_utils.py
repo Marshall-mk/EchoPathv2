@@ -7,7 +7,7 @@ import random
 import itertools
 import numpy as np
 import matplotlib.pyplot as plt
-from echosyn.common.datasets import SiameseUSDataset
+from echo.common.datasets import SiameseUSDataset
 
 
 """
