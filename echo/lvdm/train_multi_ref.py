@@ -2,7 +2,6 @@ import argparse
 import logging
 import math
 import os
-import random
 import shutil
 from einops import rearrange
 from omegaconf import OmegaConf
@@ -176,40 +175,40 @@ def log_validation(
     ref_videos = [e["video"] for e in ref_elements]
 
     # Option 1: Extract 3 reference frames at random indices 
-    idx_0 = random.randint(0, 63)
-    idx_32 = random.randint(0, 63) 
-    idx_63 = random.randint(0, 63)
-    ref_frames_multi = []
-    for e in ref_elements:
-        video = e["video"]  # C x T x H x W
-        ref_0 = video[:, idx_0, :, :]  # Frame at index 0
-        ref_32 = video[:, min(idx_32, video.shape[1]-1), :, :]  # Frame at index 32 (or last frame if shorter)
-        ref_63 = video[:, min(idx_63, video.shape[1]-1), :, :]  # Frame at index 63 (or last frame if shorter)
-        ref_frames_multi.append(torch.stack([ref_0, ref_32, ref_63], dim=1))  # C x 3 x H x W
-
-    # Option 2: Extract the key frames
+    # idx_0 = random.randint(0, 63)
+    # idx_32 = random.randint(0, 63) 
+    # idx_63 = random.randint(0, 63)
     # ref_frames_multi = []
     # for e in ref_elements:
-    #     key_frames = e["key_frames"]  # B x C x H x W
-    #     C = 4
-    #     T = key_frames.shape[0] // C
-    #     assert T >= 3, "Need at least 3 time frames"
-    #     assert key_frames.shape[0] % C == 0, "Total channels not divisible by C"
+    #     video = e["video"]  # C x T x H x W
+    #     ref_0 = video[:, idx_0, :, :]  # Frame at index 0
+    #     ref_32 = video[:, min(idx_32, video.shape[1]-1), :, :]  # Frame at index 32 (or last frame if shorter)
+    #     ref_63 = video[:, min(idx_63, video.shape[1]-1), :, :]  # Frame at index 63 (or last frame if shorter)
+    #     ref_frames_multi.append(torch.stack([ref_0, ref_32, ref_63], dim=1))  # C x 3 x H x W
 
-    #     # Split into T frames, each with C channels
-    #     frames = [
-    #         key_frames[i * C : (i + 1) * C] for i in range(T)
-    #     ]  # Each frame: (C, H, W)
+    # Option 2: Extract the key frames
+    ref_frames_multi = []
+    for e in ref_elements:
+        key_frames = e["key_frames"]  # B x C x H x W
+        C = 4
+        T = key_frames.shape[0] // C
+        assert T >= 3, "Need at least 3 time frames"
+        assert key_frames.shape[0] % C == 0, "Total channels not divisible by C"
 
-    #     # Select the frames for t=0, t=32, t=63 — adjust if actual indices differ
-    #     selected = [frames[0], frames[1], frames[2]]  # Each is (C, H, W)
+        # Split into T frames, each with C channels
+        frames = [
+            key_frames[i * C : (i + 1) * C] for i in range(T)
+        ]  # Each frame: (C, H, W)
 
-    #     # Stack across time → shape: (T, C, H, W), then permute to (C, T, H, W)
-    #     stacked = torch.stack(selected, dim=0).permute(
-    #         1, 0, 2, 3
-    #     )  # Shape: (C, T, H, W)
+        # Select the frames for t=0, t=32, t=63 — adjust if actual indices differ
+        selected = [frames[0], frames[1], frames[2]]  # Each is (C, H, W)
 
-    #     ref_frames_multi.append(stacked)
+        # Stack across time → shape: (T, C, H, W), then permute to (C, T, H, W)
+        stacked = torch.stack(selected, dim=0).permute(
+            1, 0, 2, 3
+        )  # Shape: (C, T, H, W)
+
+        ref_frames_multi.append(stacked)
 
     ref_frames_multi = torch.stack(ref_frames_multi, dim=0)  # B x C x 3 x H x W
     ref_frames_multi = ref_frames_multi.to(accelerator.device, weight_dtype)
@@ -795,30 +794,30 @@ def train(
                 B, C, T, H, W = latents.shape
 
                 # Oprion 1: Extract 3 reference frames at random indices
-                idx_0 = random.randint(0, 63)
-                idx_32 = random.randint(0, 63) 
-                idx_63 = random.randint(0, 63)
-                ref_0 = latents[:, :, idx_0, :, :]  # Frame at index 0
-                ref_32 = latents[:, :, torch.clamp(torch.tensor(idx_32), 0, T-1), :, :] 
-                ref_63 = latents[:, :, torch.clamp(torch.tensor(idx_63), 0, T-1), :, :]  
+                # idx_0 = random.randint(0, 63)
+                # idx_32 = random.randint(0, 63) 
+                # idx_63 = random.randint(0, 63)
+                # ref_0 = latents[:, :, idx_0, :, :]  # Frame at index 0
+                # ref_32 = latents[:, :, torch.clamp(torch.tensor(idx_32), 0, T-1), :, :] 
+                # ref_63 = latents[:, :, torch.clamp(torch.tensor(idx_63), 0, T-1), :, :]  
 
                 # Oprion 2: Extract key frames for reference (here we use the provided key frames)
-                # _, CT, _, _ = key_frames.shape
-                # C = 4
-                # Tk = CT // C
+                _, CT, _, _ = key_frames.shape
+                C = 4
+                Tk = CT // C
 
-                # assert CT % C == 0, "C*T must be divisible by C"
-                # assert Tk == 3, "Expected 3 key frames"
+                assert CT % C == 0, "C*T must be divisible by C"
+                assert Tk == 3, "Expected 3 key frames"
 
-                # # Split along channel dim into T frames, each with C channels
-                # frames = [
-                #     key_frames[:, i * C : (i + 1) * C, :, :] for i in range(Tk)
-                # ]  # List of 3 tensors: (B, C, H, W)
+                # Split along channel dim into T frames, each with C channels
+                frames = [
+                    key_frames[:, i * C : (i + 1) * C, :, :] for i in range(Tk)
+                ]  # List of 3 tensors: (B, C, H, W)
 
-                # # Unpack references
-                # ref_0 = frames[0]
-                # ref_32 = frames[1]
-                # ref_63 = frames[2]
+                # Unpack references
+                ref_0 = frames[0]
+                ref_32 = frames[1]
+                ref_63 = frames[2]
 
                 # Create reference frames for the entire temporal sequence
                 ref_frame_expanded = torch.zeros_like(latents)  # B x C x T x H x W
