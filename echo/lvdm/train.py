@@ -670,7 +670,7 @@ def train(
     )
 
     # Set unconditional probability
-    uncond_p = config.get("drop_conditioning", 0.3)
+    uncond_p = config.get("drop_conditioning", 0.0)
 
     # Training loop
     for epoch in range(first_epoch, config.num_train_epochs):

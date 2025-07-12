@@ -96,7 +96,7 @@ use_8bit_adam: false
 gradient_accumulation_steps: 1
 
 noise_offset: 0.1
-drop_conditionning: 0.1 # 10 % of the time, the LVEF conditionning is dropped
+drop_conditionning: 0.0 # 10 % of the time, the LVEF conditionning is dropped
 
 gradient_checkpointing: false
 use_ema: true
