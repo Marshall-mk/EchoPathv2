@@ -65,7 +65,7 @@ CUDA_VISIBLE_DEVICES='4' python -m echo.lvdm.sample_multi_ref
 
 
 def get_conditioning_vector(
-    conditioning_type, conditioning_value, B, device, dtype
+    conditioning_type, conditioning_value, B, device, dtype, generator=None
 ):
     """
     Create conditioning vectors based on the specified type
@@ -94,15 +94,15 @@ def get_conditioning_vector(
         ):
             # Random LVEF in range
             min_val, max_val = conditioning_value
-            cond = (
-                torch.rand(B, device=device, dtype=dtype) * (max_val - min_val)
-                + min_val
-            )
+            print(f"Using LVEF range: {min_val} to {max_val}")
+            cond = torch.randint(min_val, max_val+1, (B,), device=device, dtype=dtype, generator=generator)
+            cond = cond / 100.0
         else:
             # Fixed LVEF value
             cond = torch.tensor(
                 [float(conditioning_value)] * B, device=device, dtype=dtype
             )
+            cond = cond / 100.0
 
         # Format for model: B -> B x 1 x 1
         return cond[:, None, None]
@@ -419,6 +419,7 @@ if __name__ == "__main__":
                         B,
                         device,
                         dtype,
+                        generator
                     )
 
                 # Set the correct keyword argument based on conditioning type
@@ -456,14 +457,14 @@ if __name__ == "__main__":
                     raise ValueError(
                         f"Conditioning latents must be 4D or 5D tensor, got {latent_cond_images.dim()}D"
                     )
-                print(
-                    f"Conditioning shape before expansion: {latent_cond_images.shape}, dtype: {latent_cond_images.dtype}"
-                )
+                # print(
+                #     f"Conditioning shape before expansion: {latent_cond_images.shape}, dtype: {latent_cond_images.dtype}"
+                # )
                 # Create expanded reference frames for the entire temporal sequence
                 ref_frames_expanded = create_multi_ref_frames(latent_cond_images, T)
-                print(
-                    f"Conditioning shape after expansion: {ref_frames_expanded.shape}, dtype: {ref_frames_expanded.dtype}"
-                )
+                # print(
+                #     f"Conditioning shape after expansion: {ref_frames_expanded.shape}, dtype: {ref_frames_expanded.dtype}"
+                # )
 
                 # Apply classifier-free guidance if specified
                 use_condition_guidance = args.condition_guidance_scale > 1.0
