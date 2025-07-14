@@ -645,6 +645,7 @@ def main():
     
     # Get video paths
     original_videos = list(Path(args.original_dir).glob(f"*.{args.video_extension}"))
+    # original_videos = list(Path(args.original_dir).glob(f"*.avi"))  # Assuming original videos are in AVI format    
     generated_videos = list(Path(args.generated_dir).glob(f"*.{args.video_extension}"))
     
     if not original_videos:
