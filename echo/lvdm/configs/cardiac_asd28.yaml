@@ -1,5 +1,5 @@
-wandb_group: "lvdm_cardiac_asd_with_random28"
-output_dir: /nfs/usrhome/khmuhammad/EchoPath/experiments/lvdm_cardiac_asd_with_random28
+wandb_group: "lvdm_cardiac_asd_with_triplets28"
+output_dir: /nfs/usrhome/khmuhammad/EchoPath/experiments/lvdm_cardiac_asd_with_triplets28
 
 vae_path: /nfs/usrhome/khmuhammad/EchoPath/models/asd_vae28x28x4
 
@@ -70,7 +70,7 @@ noise_scheduler:
 training_mode: diffusion
 train_batch_size: 1
 dataloader_num_workers: 16
-max_train_steps: 50000
+max_train_steps: 100000
 training_conditioning_type: class_id # class_id, text, or none
 
 learning_rate: 1e-5
@@ -109,8 +109,8 @@ validation_steps: 1000
 validation_conditioning_type: class_id # class_id, text, or none
 
 report_to: wandb
-checkpointing_steps: 1000 # ~3/hour
-checkpoints_total_limit: 50 # no limit
+checkpointing_steps: 10000 # ~3/hour
+checkpoints_total_limit: 10 # no limit
 resume_from_checkpoint: latest
 tracker_project_name: echo-pathv2
 
